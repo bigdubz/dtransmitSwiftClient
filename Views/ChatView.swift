@@ -38,6 +38,9 @@ struct ChatView: View {
             .padding()
         }
         .navigationTitle("Chat with \(vm.otherUserId)")
+        .task {
+            await vm.loadInitialHistory()
+        }
     }
 
     @ViewBuilder

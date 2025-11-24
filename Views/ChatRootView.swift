@@ -10,9 +10,12 @@ struct ChatRootView: View {
         if let ws = sessionVM.webSocketClient,
            let myId = UserSession.shared.userId {
             let testPartner = "userB"
-            ChatView(vm: ChatViewModel(
+            let chatVM = ChatViewModel(
                 myUserId: myId, otherUserId: testPartner, wsClient: ws
-            ))
+            )
+
+            sessionVM.activeChatVM = chatVM
+            ChatView(vm: chatVM)
         } else {
             Text("hey, im connecting!")
         }

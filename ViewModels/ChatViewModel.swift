@@ -55,4 +55,44 @@ final class ChatViewModel: ObservableObject {
             break
         }
     }
+
+    func loadInitialHistory() async {
+        // MARK: CHANGE HERE
+        guard letmyURL = URL(string: "https://sku-bottom-farmers-conflict.trycloudflare.com/history?user=\(otherUserId)&limit=50") else {
+            return
+        }
+
+        var request = URLRequest(url: myURL)
+        request.httpMethod = "GET"
+
+        do {
+            let (data, _) = try await URLSession.shared.data(for: request)
+
+            struct HistoryMessage: Decodable {
+                let messageId: String
+                let fromUserId: String
+                let toUserId: String
+                let text: String
+                let createdAt: String
+                let delivered: Int
+                let seen: Int
+            }
+
+            let history = try JSONDecoder().decode([HistoryMessage].self), from: data)
+
+            let mapped: [ChatMessage] = history.map { row in 
+                ChatMessage(
+                    id: row.messageId
+                    text: row.text,
+                    isMe: (row.fromUserId == myUserId),
+                    timestamp: Date(timeIntervalSince1970: Double(row.createdAt)/ 1000)
+                )
+            }
+
+            let sorted = mapped.sorted { $0.timestamp < $1.timestamp }
+            messages = sorted
+        } catch {
+            print("Failed to load history:", error)
+        }
+    }
 }
