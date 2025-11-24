@@ -50,11 +50,23 @@ struct ChatView: View {
 
             Text(msg.text)
                 .padding(10)
-                .foregroundColor(msg.isMe ? .white : .black)
-                .background(msg.isMe ? Color.blue : Color.gray.opacity(0.2))
+                .foregroundColor(msg.isMe ? .white : .pink)
+                .background(msg.isMe ? Color(hex: 0x5DD100) : Color.gray)
                 .cornerRadius(12)
 
             if !msg.isMe { Spacer() }
         }
+    }
+}
+
+extension Color {
+    init(hex: UInt, alpha: Double = 1) {
+        self.init(
+            .sRGB,
+            red: Double((hex >> 16) & 0xff) / 255,
+            green: Double((hex >> 08) & 0xff) / 255,
+            blue: Double((hex >> 00) & 0xff) / 255,
+            opacity: alpha
+        )
     }
 }

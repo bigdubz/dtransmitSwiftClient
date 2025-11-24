@@ -1,5 +1,6 @@
 import Foundation
 
+
 protocol ChatWebSocketClientDelegate: AnyObject {
     func webSocketDidConnect(_ client: ChatWebSocketClient)
     func webSocketDidDisconnect(_ client: ChatWebSocketClient, error: Error?)

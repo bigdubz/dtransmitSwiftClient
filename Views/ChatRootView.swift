@@ -14,8 +14,11 @@ struct ChatRootView: View {
                 myUserId: myId, otherUserId: testPartner, wsClient: ws
             )
 
-            sessionVM.activeChatVM = chatVM
+            
             ChatView(vm: chatVM)
+                .onAppear {
+                    sessionVM.activeChatVM = chatVM
+                }
         } else {
             Text("hey, im connecting!")
         }

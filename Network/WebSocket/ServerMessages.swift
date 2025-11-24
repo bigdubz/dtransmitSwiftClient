@@ -1,6 +1,5 @@
 import Foundation
 
-
 // Server -> Client message types
 
 enum ServerMessageType: String, Decodable {
