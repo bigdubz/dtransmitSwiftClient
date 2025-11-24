@@ -4,11 +4,12 @@ import Combine
 
 @MainActor
 final class SessionViewModel: ObservableObject {
+
+
     @Published var userIdInput: String = ""
     @Published var passwordInput: String = ""
     @Published var isLoading: Bool = false
     @Published var loginError: String?
-
     @Published private(set) var isLoggedIn: Bool = false
 
 
@@ -16,6 +17,17 @@ final class SessionViewModel: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
 
     var activeChatVM: ChatViewModel?
+    var webSocketClient: ChatWebSocketClient? { wsClient }
+
+
+    init() {
+        if UserSession.shared.isLoggedIn,
+            let userId = UserSession.shared.userId,
+            let token = UserSession.shared.token {
+                self.isLoggedin = true
+                startWebSocket(userId, userId, token: token)
+        }
+    }
 
 
     func login() async {
@@ -24,7 +36,7 @@ final class SessionViewModel: ObservableObject {
 
         do {
             let result = try await AuthAPI.login(userId: userIdInput, password: passwordInput)
-            UserSession.shared.configure(UserId: result.userId, token: result.token)
+            UserSession.shared.configure(userId: result.userId, token: result.token)
 
             isLoggedIn = true
 
