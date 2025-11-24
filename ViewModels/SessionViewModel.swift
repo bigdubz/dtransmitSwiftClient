@@ -24,8 +24,8 @@ final class SessionViewModel: ObservableObject {
         if UserSession.shared.isLoggedIn,
             let userId = UserSession.shared.userId,
             let token = UserSession.shared.token {
-                self.isLoggedin = true
-                startWebSocket(userId, userId, token: token)
+                self.isLoggedIn = true
+                startWebSocket(userId: userId, token: token)
         }
     }
 
@@ -62,7 +62,7 @@ final class SessionViewModel: ObservableObject {
 
     private func startWebSocket(userId: String, token: String) {
         // MARK: CHANGE HERE
-        let wsURL = URL(string: "ws://jonathan-exactly-pottery-field.trycloudflare.com")!
+        let wsURL = URL(string: "ws://sku-bottom-farmers-conflict.trycloudflare.com")!
 
         let client = ChatWebSocketClient(url: wsURL, userId: userId, token: token)
         client.delegate = self

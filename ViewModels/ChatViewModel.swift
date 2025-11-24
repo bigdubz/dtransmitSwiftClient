@@ -19,7 +19,7 @@ final class ChatViewModel: ObservableObject {
     }
 
     func sendMessage() {
-        let text = messageInput.trimmingCharacters(in: .whitespacesAndNewLines)
+        let text = messageInput.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
 
         let tempId = UUID().uuidString

@@ -10,8 +10,9 @@ struct ContentView: View {
             if sessionVM.isLoggedIn {
                 ChatRootView(sessionVM: sessionVM)
             } else {
-                LoginVIew(sessionVM: sessionVM)
+                LoginView(sessionVM: sessionVM)
             }
         }
     }
 }
+

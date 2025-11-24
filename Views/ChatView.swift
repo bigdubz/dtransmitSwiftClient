@@ -1,30 +1,30 @@
 import SwiftUI
 
+
 struct ChatView: View {
     @ObservedObject var vm: ChatViewModel
 
     var body: some View {
         VStack {
-
             ScrollViewReader { proxy in
                 ScrollView {
                     LazyVStack(spacing: 12) {
-                        ForEach(vm.messages) { msg in 
+                        ForEach(vm.messages) { msg in
                             messageBubble(msg)
                                 .id(msg.id)
                         }
                     }
                     .padding()
                 }
-                .onChange(of: vm.messages.last) { _ in
-                    if let last = vm.messages.last {
+                .onChange(of: vm.messages) { oldValue, newValue in
+                    if let last = newValue.last {
                         withAnimation {
                             proxy.scrollTo(last.id, anchor: .bottom)
                         }
                     }
                 }
             }
-
+            
             HStack {
                 TextField("Send a message...", text: $vm.messageInput)
                     .textFieldStyle(RoundedBorderTextFieldStyle())

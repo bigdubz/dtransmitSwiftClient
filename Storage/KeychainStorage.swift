@@ -5,7 +5,7 @@ import Security
 enum KeychainStorage {
 
     @discardableResult
-    static func save(key: String, value: String) -> bool {
+    static func save(key: String, value: String) -> Bool {
         guard let data = value.data(using: .utf8) else { return false }
 
         delete(key: key)

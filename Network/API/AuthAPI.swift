@@ -8,13 +8,13 @@ struct LoginRequestBody: Encodable {
 
 struct LoginResponseBody: Decodable {
     let token: String
-    let UserId: String
+    let userId: String
 }
 
 
 enum AuthAPI {
     // MARK: CHANGE HERE
-    private static let baseURL = URL(string: "https://jonathan-exactly-pottery-field.trycloudflare.com")!
+    private static let baseURL = URL(string: "https://sku-bottom-farmers-conflict.trycloudflare.com")!
 
     static func login(userId: String, password: String) async throws -> LoginResponseBody {
         let url = baseURL.appendingPathComponent("login")
