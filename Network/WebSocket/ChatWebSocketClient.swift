@@ -146,8 +146,6 @@ final class ChatWebSocketClient: @unchecked Sendable {
 
     private func handleText(_ text: String) {
         guard let msg = WebSocketMessageCoder.decode(text) else { return }
-        print(msg)
-        print("inside ChatWebSocketClient handleText")
         switch msg.type {
         case .authOK:
             state = .connected

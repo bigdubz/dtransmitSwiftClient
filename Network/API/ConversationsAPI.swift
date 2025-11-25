@@ -10,7 +10,7 @@ struct ConversationDTO: Decodable {
 }
 
 enum ConversationsAPI {
-    private static let baseURL = AuthAPI.baseURL
+    private static let baseURL = AppConfig.apiBaseURL
 
     static func fetchConversations(token: String) async throws -> [Conversation] {
         let url = baseURL.appendingPathComponent("conversations")

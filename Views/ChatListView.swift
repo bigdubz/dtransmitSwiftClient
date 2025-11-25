@@ -128,18 +128,7 @@ private struct ConversationDestination: View {
             if let vm {
                 ChatView(vm: vm)
             } else {
-                ProgressView()
-                    .task {
-                        // Resolve once and store
-                        vm = listVM.openConversation(with: peerId)
-                        // Optional: log for debugging
-                        if let vm {
-                            print("Resolved VM for peer:", vm.otherUserId,
-                                  "ptr:", Unmanaged.passUnretained(vm).toOpaque())
-                        } else {
-                            print("Failed to resolve VM for peer:", peerId)
-                        }
-                    }
+                ProgressView().task { vm = listVM.openConversation(with: peerId) }
             }
         }
     }

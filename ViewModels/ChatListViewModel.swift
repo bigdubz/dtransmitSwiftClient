@@ -11,7 +11,6 @@ final class ChatListViewModel: ObservableObject {
 
     private let sessionVM: SessionViewModel
 
-    // Cache a single ChatViewModel per conversation/user
     private var chatVMs: [String: ChatViewModel] = [:]
 
     init(sessionVM: SessionViewModel) {
@@ -33,7 +32,6 @@ final class ChatListViewModel: ObservableObject {
         } catch {
             errorMessage = error.localizedDescription
         }
-        print("sanity check: \(conversations)")
         isLoading = false
     }
 
@@ -53,7 +51,6 @@ final class ChatListViewModel: ObservableObject {
             otherUserId: otherUserId,
             wsClient: ws
         )
-        print("my user id: \(myId), other user id: \(otherUserId)")
         chatVMs[otherUserId] = vm
         sessionVM.activeChatVM = vm
         return vm

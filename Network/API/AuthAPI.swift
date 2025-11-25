@@ -13,8 +13,7 @@ struct LoginResponseBody: Decodable {
 
 
 enum AuthAPI {
-    // MARK: CHANGE HERE
-    static let baseURL = URL(string: "https://lonely-variety-stolen-cherry.trycloudflare.com")!
+    private static let baseURL = AppConfig.apiBaseURL
 
     static func login(userId: String, password: String) async throws -> LoginResponseBody {
         let url = baseURL.appendingPathComponent("login")

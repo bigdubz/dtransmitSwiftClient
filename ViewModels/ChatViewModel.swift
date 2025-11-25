@@ -62,10 +62,11 @@ final class ChatViewModel: ObservableObject {
     func loadInitialHistory() async {
         guard let token = UserSession.shared.token else { return }
         
-        // MARK: CHANGE HERE
-        guard let myURL = URL(string: "https://lonely-variety-stolen-cherry.trycloudflare.com/history?user=\(otherUserId)&limit=50") else {
+        guard let myURL = URL(string: AppConfig.apiBaseURL+"/history?user=\(otherUserId)&limit=50") else {
             return
         }
+
+        guard let myURL = URL(string: )
 
         var request = URLRequest(url: myURL)
         request.httpMethod = "GET"
@@ -99,9 +100,17 @@ final class ChatViewModel: ObservableObject {
             // Ensure main-thread publish
             await MainActor.run {
                 self.messages = sorted
+                markMessagesAsRead()
             }
+
         } catch {
             print("Failed to load history:", error)
+        }
+    }
+
+    func markMessagesAsRead() {
+        for msg in self.messages {
+            wsClient.sendSeen(msg.id)
         }
     }
 }
