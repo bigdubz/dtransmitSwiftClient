@@ -61,8 +61,7 @@ final class SessionViewModel: ObservableObject {
     }
 
     private func startWebSocket(userId: String, token: String) {
-        // MARK: CHANGE HERE
-        let wsURL = URL(string: "ws://lonely-variety-stolen-cherry.trycloudflare.com")!
+        let wsURL = URL(string: AppConfig.wsBaseURL)!
 
         let client = ChatWebSocketClient(url: wsURL, userId: userId, token: token)
         client.delegate = self

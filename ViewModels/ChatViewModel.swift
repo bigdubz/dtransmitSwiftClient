@@ -62,11 +62,10 @@ final class ChatViewModel: ObservableObject {
     func loadInitialHistory() async {
         guard let token = UserSession.shared.token else { return }
         
-        guard let myURL = URL(string: AppConfig.apiBaseURL+"/history?user=\(otherUserId)&limit=50") else {
-            return
-        }
+        let baseURL = AppConfig.apiBaseURL+"/history?user=\(otherUserId)&limit=50"
+        
+        guard let myURL = URL(string: baseURL) else { return }
 
-        guard let myURL = URL(string: )
 
         var request = URLRequest(url: myURL)
         request.httpMethod = "GET"
@@ -86,6 +85,12 @@ final class ChatViewModel: ObservableObject {
             }
 
             let history = try JSONDecoder().decode([HistoryMessage].self, from: data)
+            
+            for row in history {
+                if row.seen == 0 {
+                    markMessageAsSeen(messageId: row.messageId)
+                }
+            }
 
             let mapped: [ChatMessage] = history.map { row in 
                 ChatMessage(
@@ -100,7 +105,6 @@ final class ChatViewModel: ObservableObject {
             // Ensure main-thread publish
             await MainActor.run {
                 self.messages = sorted
-                markMessagesAsRead()
             }
 
         } catch {
@@ -108,9 +112,8 @@ final class ChatViewModel: ObservableObject {
         }
     }
 
-    func markMessagesAsRead() {
-        for msg in self.messages {
-            wsClient.sendSeen(msg.id)
-        }
+    func markMessageAsSeen(messageId: String) {
+        wsClient.sendSeen(messageId: messageId)
+    
     }
 }

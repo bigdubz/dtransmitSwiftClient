@@ -13,9 +13,12 @@ struct LoginResponseBody: Decodable {
 
 
 enum AuthAPI {
-    private static let baseURL = AppConfig.apiBaseURL
-
+    private static let baseURL = URL(string: AppConfig.apiBaseURL)
+    
     static func login(userId: String, password: String) async throws -> LoginResponseBody {
+        guard let baseURL = baseURL else {
+            throw AuthError.invalidResponse // very bad but who cares
+        }
         let url = baseURL.appendingPathComponent("login")
 
         var request = URLRequest(url: url)

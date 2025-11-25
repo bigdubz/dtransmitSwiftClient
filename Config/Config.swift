@@ -2,6 +2,6 @@ import Foundation
 
 
 enum AppConfig {
-    static let apiBaseURL = URL(string: "https://cloudflaredomain.com")
-    static let wsBaseURL = URL(string: "wss://cloudflaredomain.com")
+    static let apiBaseURL = "https://defining-estates-adapters-walter.trycloudflare.com"
+    static let wsBaseURL = "wss://defining-estates-adapters-walter.trycloudflare.com"
 }
