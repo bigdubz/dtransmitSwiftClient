@@ -6,37 +6,12 @@ struct ChatRootView: View {
     @ObservedObject var sessionVM: SessionViewModel
 
     var body: some View {
-        
-        if let ws = sessionVM.webSocketClient,
-           let myId = UserSession.shared.userId {
-            let testPartner = "userB"
-            let chatVM = ChatViewModel(
-                myUserId: myId, otherUserId: testPartner, wsClient: ws
-            )
-
-            
-            ChatView(vm: chatVM)
-                .onAppear {
-                    sessionVM.activeChatVM = chatVM
-                }
+        if sessionVM.isLoggedIn {
+            NavigationStack {
+                ChatListView(sessionVM: sessionVM)
+            }
         } else {
-            Text("hey, im connecting!")
+            Text("Not logged in.")
         }
-        
-//        VStack(spacing: 20) {
-//            Text("Logged in as \(sessionVM.userIdInput)")
-//                .font(.headline)
-//            
-//            
-//
-//
-//            Button("Logout") {
-//                sessionVM.logout()
-//            }
-//            .padding()
-//            .background(Color.red.opacity(0.8))
-//            .foregroundColor(.white)
-//            .cornerRadius(8)
-//        }
     }
 }

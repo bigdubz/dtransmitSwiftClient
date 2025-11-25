@@ -14,7 +14,7 @@ struct LoginResponseBody: Decodable {
 
 enum AuthAPI {
     // MARK: CHANGE HERE
-    private static let baseURL = URL(string: "https://sku-bottom-farmers-conflict.trycloudflare.com")!
+    static let baseURL = URL(string: "https://sku-bottom-farmers-conflict.trycloudflare.com")!
 
     static func login(userId: String, password: String) async throws -> LoginResponseBody {
         let url = baseURL.appendingPathComponent("login")

@@ -38,6 +38,17 @@ struct ChatView: View {
             .padding()
         }
         .navigationTitle("Chat with \(vm.otherUserId)")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar( {
+            ToolBarItem(placement: .topBarTrailing) {
+                Button {
+                    dismiss()
+                } label: {
+                    Image(systemName: "chevron.backward.circle.fill")
+                        .font(.system(size: 20))
+                }
+            }
+        })
         .task {
             await vm.loadInitialHistory()
         }
