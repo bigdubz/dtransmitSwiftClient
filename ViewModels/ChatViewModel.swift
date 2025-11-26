@@ -6,6 +6,7 @@ import Combine
 final class ChatViewModel: ObservableObject {
     @Published private(set) var messages: [ChatMessage] = []
     @Published var messageInput: String = ""
+    @Published var isLoadingOlderMessages: Bool = false
 
     let myUserId: String
     let otherUserId: String

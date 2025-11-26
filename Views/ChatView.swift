@@ -10,6 +10,24 @@ struct ChatView: View {
             ScrollViewReader { proxy in
                 ScrollView {
                     LazyVStack(spacing: 12) {
+                        Color.clear
+                            .frame(height: 1)
+                            .id("TOP_SENTINEL")
+                            .onAppear {
+                                guard !vm.isLoadingOlderMessages else { return }
+                                vm.isLoadingOlderMessages = true
+
+                                Task {
+                                    var firstMessage = vm.messages.first?.id
+                                    // load older messages
+                                    if let topMessageId {
+                                        withAnimation {
+                                            proxy.scrollTo(firstMessage.id, anchor: .bottom)
+                                        }
+                                    }
+                                    vm.isLoadingOlderMessages = false
+                                }
+                            }
                         ForEach(vm.messages) { msg in
                             messageBubble(msg)
                                 .id(msg.id)
