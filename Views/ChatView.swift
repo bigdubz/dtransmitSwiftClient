@@ -1,5 +1,11 @@
 import SwiftUI
 
+// MARK: TODO
+// TODO:    receive message through websocket when in ChatListView,
+//          seen/delivered indicators
+//          typing indicators
+//          try fixing scrolling issue inside ChatView but prob not lmfaooo
+
 
 struct ChatView: View {
     @ObservedObject var vm: ChatViewModel
@@ -16,16 +22,20 @@ struct ChatView: View {
                             .onAppear {
                                 guard !vm.isLoadingOlderMessages else { return }
                                 vm.isLoadingOlderMessages = true
+                                vm.shouldAutoScrollToBottom = false
 
                                 Task {
-                                    var firstMessage = vm.messages.first?.id
-                                    // load older messages
-                                    if let topMessageId {
+                                    let firstMessage = vm.messages.first
+                                    
+                                    if let firstMessage {
+                                        await vm.loadOlderHistory(before: firstMessage.timestamp)
                                         withAnimation {
                                             proxy.scrollTo(firstMessage.id, anchor: .bottom)
                                         }
                                     }
+                                    
                                     vm.isLoadingOlderMessages = false
+                                    vm.shouldAutoScrollToBottom = true
                                 }
                             }
                         ForEach(vm.messages) { msg in
@@ -36,10 +46,11 @@ struct ChatView: View {
                     .padding()
                 }
                 .onChange(of: vm.messages) { oldValue, newValue in
-                    if let last = newValue.last {
-                        withAnimation {
-                            proxy.scrollTo(last.id, anchor: .bottom)
-                        }
+                    guard vm.shouldAutoScrollToBottom else { return }
+                    guard let last = newValue.last else { return }
+                    
+                    withAnimation {
+                        proxy.scrollTo(last.id, anchor: .bottom)
                     }
                 }
             }

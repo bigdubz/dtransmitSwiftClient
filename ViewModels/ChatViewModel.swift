@@ -7,7 +7,8 @@ final class ChatViewModel: ObservableObject {
     @Published private(set) var messages: [ChatMessage] = []
     @Published var messageInput: String = ""
     @Published var isLoadingOlderMessages: Bool = false
-
+    @Published var shouldAutoScrollToBottom: Bool = true
+    
     let myUserId: String
     let otherUserId: String
 
@@ -59,41 +60,48 @@ final class ChatViewModel: ObservableObject {
             break
         }
     }
-
-    func loadInitialHistory() async {
-        guard let token = UserSession.shared.token else { return }
+    
+    struct HistoryMessage: Decodable {
+        let messageId: String
+        let fromUserId: String
+        let toUserId: String
+        let text: String
+        let createdAt: Int
+        let delivered: Int
+        let seen: Int
+    }
+    
+    func loadHistory(before: Date? = nil) async -> [ChatMessage] {
+        guard let token = UserSession.shared.token else { return [] }
         
-        let baseURL = AppConfig.apiBaseURL+"/history?user=\(otherUserId)&limit=50"
         
-        guard let myURL = URL(string: baseURL) else { return }
-
-
+        var components = URLComponents(string: "\(AppConfig.apiBaseURL)/history")!
+        components.queryItems = [
+            .init(name: "user", value: otherUserId),
+            .init(name: "limit", value: "50")
+        ]
+        if let before {
+            let msString = String(Int(before.timeIntervalSince1970 * 1000))
+            components.queryItems?.append(.init(name: "before", value: msString))
+        }
+        
+        guard let myURL = components.url else { return [] }
+        
+        
         var request = URLRequest(url: myURL)
         request.httpMethod = "GET"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-
+        
         do {
             let (data, _) = try await URLSession.shared.data(for: request)
-
-            struct HistoryMessage: Decodable {
-                let messageId: String
-                let fromUserId: String
-                let toUserId: String
-                let text: String
-                let createdAt: Int
-                let delivered: Int
-                let seen: Int
-            }
-
+            
             let history = try JSONDecoder().decode([HistoryMessage].self, from: data)
             
-            for row in history {
-                if row.seen == 0 {
-                    markMessageAsSeen(messageId: row.messageId)
-                }
+            for row in history where row.seen == 0 {
+                markMessageAsSeen(messageId: row.messageId)
             }
-
-            let mapped: [ChatMessage] = history.map { row in 
+            
+            let mapped: [ChatMessage] = history.map { row in
                 ChatMessage(
                     id: row.messageId,
                     text: row.text,
@@ -101,20 +109,34 @@ final class ChatViewModel: ObservableObject {
                     timestamp: Date(timeIntervalSince1970: TimeInterval(row.createdAt) / 1000)
                 )
             }
-
-            let sorted = mapped.sorted { $0.timestamp < $1.timestamp }
-            // Ensure main-thread publish
-            await MainActor.run {
-                self.messages = sorted
-            }
-
+            
+            
+            return mapped.reversed()
+            
         } catch {
-            print("Failed to load history:", error)
+            print("Failed to load History: \(error)")
+            return []
+        }
+    }
+    
+    func loadOlderHistory(before: Date) async {
+        let sorted = await loadHistory(before: before)
+        
+        await MainActor.run {
+            self.messages.insert(contentsOf: sorted, at: 0)
+        }
+    }
+
+    func loadInitialHistory() async {
+        let sorted = await loadHistory()
+        
+        await MainActor.run {
+            self.messages.removeAll()
+            self.messages = sorted
         }
     }
 
     func markMessageAsSeen(messageId: String) {
         wsClient.sendSeen(messageId: messageId)
-    
     }
 }
