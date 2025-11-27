@@ -29,11 +29,13 @@ final class ChatViewModel: ObservableObject {
             id: tempId,
             text: text,
             isMe: true,
-            timestamp: Date()
+            timestamp: Date(),
+            isSeen: false,
+            clientId: tempId
         )
         messages.append(newMsg)
         
-        wsClient.sendChat(to: otherUserId, text: text)
+        wsClient.sendChat(to: otherUserId, text: text, clientId: tempId)
 
         messageInput = ""
     }
@@ -47,7 +49,9 @@ final class ChatViewModel: ObservableObject {
                         id: payload.messageId,
                         text: payload.text,
                         isMe: false,
-                        timestamp: Date(timeIntervalSince1970: Double(payload.createdAt) / 1000)
+                        timestamp: Date(timeIntervalSince1970: Double(payload.createdAt) / 1000),
+                        isSeen: false,
+                        clientId: payload.clientId
                     )
                     // Ensure main-thread publish even if invoked off-main
                     Task { @MainActor in
@@ -55,7 +59,26 @@ final class ChatViewModel: ObservableObject {
                     }
                 }
             }
-
+            
+        case .messageSeen:
+            if let payload = message.payload as? MessageIdPayload {
+                Task { @MainActor in
+                    if let index = messages.firstIndex(where: { $0.clientId == payload.clientId || $0.id == payload.messageId }) {
+                        messages[index].isSeen = true
+                    }
+                }
+            }
+        
+        case .messageDelivered:
+            if let payload = message.payload as? MessageIdPayload {
+                let msgId = payload.messageId
+                Task { @MainActor in
+                    if let index = messages.firstIndex(where: { $0.clientId == payload.clientId }) {
+                        messages[index].id = msgId
+                    }
+                }
+            }
+            
         default:
             break
         }
@@ -98,7 +121,7 @@ final class ChatViewModel: ObservableObject {
             let history = try JSONDecoder().decode([HistoryMessage].self, from: data)
             
             for row in history where row.seen == 0 {
-                markMessageAsSeen(messageId: row.messageId)
+                markMessageAsSeen(messageId: row.messageId, clientId: row.messageId)
             }
             
             let mapped: [ChatMessage] = history.map { row in
@@ -106,7 +129,9 @@ final class ChatViewModel: ObservableObject {
                     id: row.messageId,
                     text: row.text,
                     isMe: (row.fromUserId == myUserId),
-                    timestamp: Date(timeIntervalSince1970: TimeInterval(row.createdAt) / 1000)
+                    timestamp: Date(timeIntervalSince1970: TimeInterval(row.createdAt) / 1000),
+                    isSeen: row.seen != 0,
+                    clientId: row.messageId
                 )
             }
             
@@ -136,7 +161,7 @@ final class ChatViewModel: ObservableObject {
         }
     }
 
-    func markMessageAsSeen(messageId: String) {
-        wsClient.sendSeen(messageId: messageId)
+    func markMessageAsSeen(messageId: String, clientId: String) {
+        wsClient.sendSeen(messageId: messageId, clientId: clientId)
     }
 }

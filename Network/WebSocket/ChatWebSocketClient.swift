@@ -75,16 +75,16 @@ final class ChatWebSocketClient: @unchecked Sendable {
         delegate?.webSocketDidDisconnect(self, error: nil)
     }
 
-    func sendChat(to userId: String, text: String) {
+    func sendChat(to userId: String, text: String, clientId: String) {
         let msg = ClientMessage(
             type: .chat,
-            payload: ChatPayload(toUserId: userId, text: text)
+            payload: ChatPayload(toUserId: userId, text: text, clientId: clientId)
         )
         send(msg)
     }
 
-    func sendSeen(messageId: String) {
-        let msg = ClientMessage(type: .messageSeen, payload: MessageSeenPayload(messageId: messageId))
+    func sendSeen(messageId: String, clientId: String) {
+        let msg = ClientMessage(type: .messageSeen, payload: MessageSeenPayload(messageId: messageId, clientId: clientId))
         send(msg)
     }
 

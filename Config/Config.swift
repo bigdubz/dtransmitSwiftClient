@@ -1,7 +1,9 @@
 import Foundation
 
 
+let base = "wanting-apps-executive-uncle.trycloudflare.com"
+
 enum AppConfig {
-    static let apiBaseURL = "https://pics-harris-arrive-incorporated.trycloudflare.com"
-    static let wsBaseURL = "wss://pics-harris-arrive-incorporated.trycloudflare.com"
+    static let apiBaseURL = "https://\(base)"
+    static let wsBaseURL = "wss://\(base)"
 }

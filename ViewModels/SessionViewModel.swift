@@ -17,6 +17,7 @@ final class SessionViewModel: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
 
     var activeChatVM: ChatViewModel?
+    var chatListVM: ChatListViewModel?
     var webSocketClient: ChatWebSocketClient? { wsClient }
 
 
@@ -86,6 +87,7 @@ extension SessionViewModel: ChatWebSocketClientDelegate {
         // Ensure delivery to ChatViewModel on the main actor
         Task { @MainActor in
             self.activeChatVM?.handleWSMessage(message)
+            self.chatListVM?.handleWSMessage(message)
         }
     }
 }

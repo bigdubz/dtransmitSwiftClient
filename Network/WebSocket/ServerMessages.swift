@@ -66,10 +66,12 @@ struct ChatMessagePayload: DecodablePayload {
     let text: String
     let messageId: String
     let createdAt: TimeInterval
+    let clientId: String
 }
 
 struct MessageIdPayload: DecodablePayload {
     let messageId: String
+    let clientId: String
 }
 
 struct ServerErrorPayload: DecodablePayload {

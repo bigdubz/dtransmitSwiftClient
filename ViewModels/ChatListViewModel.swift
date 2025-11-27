@@ -15,6 +15,7 @@ final class ChatListViewModel: ObservableObject {
 
     init(sessionVM: SessionViewModel) {
         self.sessionVM = sessionVM
+        self.sessionVM.chatListVM = self
     }
 
     func loadConversations() async {
@@ -54,5 +55,36 @@ final class ChatListViewModel: ObservableObject {
         chatVMs[otherUserId] = vm
         sessionVM.activeChatVM = vm
         return vm
+    }
+    
+    func handleWSMessage(_ message: ServerMessage) {
+        switch message.type {
+        case .chat:
+            if let payload = message.payload as? ChatMessagePayload {
+                if let index = conversations.firstIndex(where: { $0.id == payload.fromUserId}) {
+                    conversations[index].unreadCount += 1
+                    conversations[index].lastMessage = payload.text
+                    conversations[index].lastTimestamp = Date(timeIntervalSince1970: payload.createdAt / 1000)
+                }
+            }
+            
+        case .userOnline:
+            if let payload = message.payload as? UserOnlinePayload {
+                if let index = conversations.firstIndex(where: { $0.id == payload.userId }) {
+                    conversations[index].isOnline = true
+                }
+            }
+            
+        case .userOffline:
+            if let payload = message.payload as? UserOfflinePayload {
+                if let index = conversations.firstIndex(where: { $0.id == payload.userId }) {
+                    conversations[index].isOnline = false
+                }
+            }
+            
+        default:
+            break
+            
+        }
     }
 }

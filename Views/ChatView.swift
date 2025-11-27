@@ -1,7 +1,7 @@
 import SwiftUI
 
 // MARK: TODO
-// TODO:    receive message through websocket when in ChatListView,
+// TODO:    receive message through websocket when in ChatListView -- done
 //          seen/delivered indicators
 //          typing indicators
 //          try fixing scrolling issue inside ChatView but prob not lmfaooo
@@ -10,6 +10,12 @@ import SwiftUI
 struct ChatView: View {
     @ObservedObject var vm: ChatViewModel
     @Environment(\.dismiss) private var dismiss
+    
+    var lastSeenMessageId: String? {
+        vm.messages
+            .filter { $0.isMe }
+            .last(where: { $0.isSeen })?.id
+    }
 
     var body: some View {
         VStack {
@@ -39,8 +45,11 @@ struct ChatView: View {
                                 }
                             }
                         ForEach(vm.messages) { msg in
-                            messageBubble(msg)
-                                .id(msg.id)
+                            messageBubble(
+                                msg,
+                                showSeen: msg.id == lastSeenMessageId
+                            )
+                            .id(msg.id)
                         }
                     }
                     .padding()
@@ -51,6 +60,9 @@ struct ChatView: View {
                     
                     withAnimation {
                         proxy.scrollTo(last.id, anchor: .bottom)
+                    }
+                    if !last.isMe {
+                        vm.markMessageAsSeen(messageId: last.id, clientId: last.clientId)
                     }
                 }
             }
@@ -85,7 +97,7 @@ struct ChatView: View {
     }
 
     @ViewBuilder
-    private func messageBubble(_ msg: ChatMessage) -> some View {
+    private func messageBubble(_ msg: ChatMessage, showSeen: Bool) -> some View {
         HStack {
             if msg.isMe { Spacer() }
 
@@ -96,6 +108,13 @@ struct ChatView: View {
                 .cornerRadius(12)
 
             if !msg.isMe { Spacer() }
+        }
+        
+        if showSeen {
+            Text("Seen")
+                .font(.caption2)
+                .foregroundColor(.gray)
+                .padding(.horizontal, msg.isMe ? 0 : 20)
         }
     }
 }

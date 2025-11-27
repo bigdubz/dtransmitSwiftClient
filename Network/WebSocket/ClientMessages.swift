@@ -43,10 +43,12 @@ struct AuthPayload: EncodablePayload {
 struct ChatPayload: EncodablePayload {
     let toUserId: String
     let text: String
+    let clientId: String
 }
 
 struct MessageSeenPayload: EncodablePayload {
     let messageId: String
+    let clientId: String
 }
 
 struct TypingPayload: EncodablePayload {
