@@ -83,8 +83,8 @@ final class ChatWebSocketClient: @unchecked Sendable {
         send(msg)
     }
 
-    func sendSeen(messageId: String, clientId: String) {
-        let msg = ClientMessage(type: .messageSeen, payload: MessageSeenPayload(messageId: messageId, clientId: clientId))
+    func sendSeen(messageId: String) {
+        let msg = ClientMessage(type: .messageSeen, payload: MessageSeenPayload(messageId: messageId))
         send(msg)
     }
 

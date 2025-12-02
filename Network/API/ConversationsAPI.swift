@@ -36,7 +36,6 @@ enum ConversationsAPI {
 
         let decoder = JSONDecoder()
         let dtos = try decoder.decode([ConversationDTO].self, from: data)
-        
         return dtos.map { dto in
             Conversation(
                 id: dto.peerId,

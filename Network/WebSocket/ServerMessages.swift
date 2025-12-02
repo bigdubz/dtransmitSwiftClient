@@ -14,6 +14,8 @@ enum ServerMessageType: String, Decodable {
 
     case userOnline = "USER_ONLINE"
     case userOffline = "USER_OFFLINE"
+    
+    case userTyping = "USER_TYPING"
 }
 
 struct ServerMessage: Decodable {
@@ -31,8 +33,12 @@ struct ServerMessage: Decodable {
                 payload = try container.decode(AuthErrorPayload.self, forKey: .payload)
             case .chat:
                 payload = try container.decode(ChatMessagePayload.self, forKey: .payload)
-            case .messageDelivered, .messageSeen:
-                payload = try container.decode(MessageIdPayload.self, forKey: .payload)
+            case .messageDelivered:
+                payload = try container.decode(MessageDeliveredPayload.self, forKey: .payload)
+            case .messageSeen:
+                payload = try container.decode(ServerMessageSeenPayload.self, forKey: .payload)
+            case .userTyping:
+                payload = try container.decode(ServerTypingPayload.self, forKey: .payload)
             case .error:
                 payload = try container.decode(ServerErrorPayload.self, forKey: .payload)
             case .userOnline:
@@ -66,12 +72,21 @@ struct ChatMessagePayload: DecodablePayload {
     let text: String
     let messageId: String
     let createdAt: TimeInterval
+    let isOnline: Bool
+}
+
+struct MessageDeliveredPayload: DecodablePayload {
+    let messageId: String
     let clientId: String
 }
 
-struct MessageIdPayload: DecodablePayload {
+struct ServerMessageSeenPayload: DecodablePayload {
     let messageId: String
-    let clientId: String
+}
+
+struct ServerTypingPayload: DecodablePayload {
+    let fromUserId: String
+    let isTyping: Bool
 }
 
 struct ServerErrorPayload: DecodablePayload {

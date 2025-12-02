@@ -62,23 +62,31 @@ final class ChatListViewModel: ObservableObject {
         case .chat:
             if let payload = message.payload as? ChatMessagePayload {
                 if let index = conversations.firstIndex(where: { $0.id == payload.fromUserId}) {
-                    conversations[index].unreadCount += 1
-                    conversations[index].lastMessage = payload.text
-                    conversations[index].lastTimestamp = Date(timeIntervalSince1970: payload.createdAt / 1000)
+                    Task { @MainActor in
+                        if payload.isOnline {
+                            conversations[index].unreadCount += 1
+                        }
+                        conversations[index].lastMessage = payload.text
+                        conversations[index].lastTimestamp = Date(timeIntervalSince1970: payload.createdAt / 1000)
+                    }
                 }
             }
             
         case .userOnline:
             if let payload = message.payload as? UserOnlinePayload {
                 if let index = conversations.firstIndex(where: { $0.id == payload.userId }) {
-                    conversations[index].isOnline = true
+                    Task { @MainActor in
+                        conversations[index].isOnline = true
+                    }
                 }
             }
             
         case .userOffline:
             if let payload = message.payload as? UserOfflinePayload {
                 if let index = conversations.firstIndex(where: { $0.id == payload.userId }) {
-                    conversations[index].isOnline = false
+                    Task { @MainActor in
+                        conversations[index].isOnline = false
+                    }
                 }
             }
             

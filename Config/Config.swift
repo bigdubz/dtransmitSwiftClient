@@ -1,7 +1,7 @@
 import Foundation
 
 
-let base = "wanting-apps-executive-uncle.trycloudflare.com"
+let base = "api.nodesya.website" // im crying
 
 enum AppConfig {
     static let apiBaseURL = "https://\(base)"

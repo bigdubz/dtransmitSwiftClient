@@ -7,5 +7,4 @@ struct ChatMessage: Identifiable, Equatable {
     let isMe: Bool
     let timestamp: Date
     var isSeen: Bool
-    let clientId: String
 }

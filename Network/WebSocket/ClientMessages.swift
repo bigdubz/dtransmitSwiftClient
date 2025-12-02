@@ -48,7 +48,6 @@ struct ChatPayload: EncodablePayload {
 
 struct MessageSeenPayload: EncodablePayload {
     let messageId: String
-    let clientId: String
 }
 
 struct TypingPayload: EncodablePayload {

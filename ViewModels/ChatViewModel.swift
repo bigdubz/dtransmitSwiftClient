@@ -8,6 +8,10 @@ final class ChatViewModel: ObservableObject {
     @Published var messageInput: String = ""
     @Published var isLoadingOlderMessages: Bool = false
     @Published var shouldAutoScrollToBottom: Bool = true
+    @Published var otherUserIsTyping: Bool = false
+    
+    private var typingDebounceTimer: Timer?
+    private var didSendTypingTrue = false
     
     let myUserId: String
     let otherUserId: String
@@ -23,6 +27,10 @@ final class ChatViewModel: ObservableObject {
     func sendMessage() {
         let text = messageInput.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
+        
+        sendIsTyping(toUserId: myUserId, isTyping: false)
+        didSendTypingTrue = false
+        typingDebounceTimer?.invalidate()
 
         let tempId = UUID().uuidString
         let newMsg = ChatMessage(
@@ -30,8 +38,7 @@ final class ChatViewModel: ObservableObject {
             text: text,
             isMe: true,
             timestamp: Date(),
-            isSeen: false,
-            clientId: tempId
+            isSeen: false
         )
         messages.append(newMsg)
         
@@ -50,8 +57,7 @@ final class ChatViewModel: ObservableObject {
                         text: payload.text,
                         isMe: false,
                         timestamp: Date(timeIntervalSince1970: Double(payload.createdAt) / 1000),
-                        isSeen: false,
-                        clientId: payload.clientId
+                        isSeen: false
                     )
                     // Ensure main-thread publish even if invoked off-main
                     Task { @MainActor in
@@ -61,20 +67,28 @@ final class ChatViewModel: ObservableObject {
             }
             
         case .messageSeen:
-            if let payload = message.payload as? MessageIdPayload {
+            if let payload = message.payload as? ServerMessageSeenPayload {
                 Task { @MainActor in
-                    if let index = messages.firstIndex(where: { $0.clientId == payload.clientId || $0.id == payload.messageId }) {
+                    if let index = messages.firstIndex(where: { $0.id == payload.messageId }) {
                         messages[index].isSeen = true
                     }
                 }
             }
         
         case .messageDelivered:
-            if let payload = message.payload as? MessageIdPayload {
-                let msgId = payload.messageId
+            if let payload = message.payload as? MessageDeliveredPayload {
                 Task { @MainActor in
-                    if let index = messages.firstIndex(where: { $0.clientId == payload.clientId }) {
-                        messages[index].id = msgId
+                    if let index = messages.firstIndex(where: { $0.id == payload.clientId }) {
+                        messages[index].id = payload.messageId
+                    }
+                }
+            }
+            
+        case .userTyping:
+            if let payload = message.payload as? ServerTypingPayload {
+                Task { @MainActor in
+                    if payload.fromUserId == otherUserId {
+                        otherUserIsTyping = payload.isTyping
                     }
                 }
             }
@@ -120,8 +134,8 @@ final class ChatViewModel: ObservableObject {
             
             let history = try JSONDecoder().decode([HistoryMessage].self, from: data)
             
-            for row in history where row.seen == 0 {
-                markMessageAsSeen(messageId: row.messageId, clientId: row.messageId)
+            for row in history where row.seen == 0 && row.fromUserId != myUserId {
+                markMessageAsSeen(messageId: row.messageId)
             }
             
             let mapped: [ChatMessage] = history.map { row in
@@ -130,11 +144,10 @@ final class ChatViewModel: ObservableObject {
                     text: row.text,
                     isMe: (row.fromUserId == myUserId),
                     timestamp: Date(timeIntervalSince1970: TimeInterval(row.createdAt) / 1000),
-                    isSeen: row.seen != 0,
-                    clientId: row.messageId
+                    isSeen: row.seen != 0
                 )
             }
-            
+        
             
             return mapped.reversed()
             
@@ -160,8 +173,31 @@ final class ChatViewModel: ObservableObject {
             self.messages = sorted
         }
     }
+    
+    func userStartedTyping() {
+        // Send `isTyping = true` once
+        if !didSendTypingTrue {
+            sendIsTyping(toUserId: otherUserId, isTyping: true)
+            didSendTypingTrue = true
+        }
+        
+        // Reset debounce timer
+        typingDebounceTimer?.invalidate()
+        typingDebounceTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { [weak self] _ in
+            guard let self else { return }
+            
+            Task { @MainActor in
+                self.didSendTypingTrue = false
+                self.sendIsTyping(toUserId: self.otherUserId, isTyping: false)
+            }
+        }
+    }
 
-    func markMessageAsSeen(messageId: String, clientId: String) {
-        wsClient.sendSeen(messageId: messageId, clientId: clientId)
+    func markMessageAsSeen(messageId: String) {
+        wsClient.sendSeen(messageId: messageId)
+    }
+    
+    func sendIsTyping(toUserId: String, isTyping: Bool) {
+        wsClient.sendTyping(to: toUserId, isTyping: isTyping)
     }
 }
