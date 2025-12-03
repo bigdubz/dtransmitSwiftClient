@@ -26,6 +26,7 @@ struct ChatView: View {
             
             inputBarSection
         }
+        .background(AppConfig.globalBackgroundColor)
         
         // GLOBAL TAP TO DISMISS KEYBOARD
         .onTapGesture {
@@ -47,15 +48,22 @@ struct ChatView: View {
     private var messagesSection: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                LazyVStack(spacing: 12) {
+                LazyVStack(spacing: 4) {
 
                     topHistoryLoader(proxy: proxy)
                     
-                    ForEach(vm.messages) { msg in
+                    ForEach(vm.messages.indices, id: \.self) { index in
+                        let msg = vm.messages[index]
+                        let prev = index > 0 ? vm.messages[index - 1] : nil
+                        
+                        let isSenderSwitch = prev == nil || msg.isMe != prev!.isMe
+                        
                         messageBubble(
                             msg,
-                            showSeen: msg.id == lastSeenMessageId
+                            showSeen: msg.id == lastSeenMessageId,
+                            showTimestamp: shouldShowTimestamp(current: msg, previous: prev)
                         )
+                        .padding(.top, isSenderSwitch ? 12 : 0)
                         .id(msg.id)
                     }
                     
@@ -125,27 +133,54 @@ struct ChatView: View {
             .frame(height: 1)
             .id("BOTTOM_SENTINEL")
     }
+    
+    private func shouldShowTimestamp(current: ChatMessage, previous: ChatMessage?) -> Bool {
+        guard let previous else { return true }
+        
+        if current.isMe != previous.isMe {
+            return true
+        }
+        
+        let timeGap = current.timestamp.timeIntervalSince(previous.timestamp)
+        if timeGap > 5 * 60 {
+            return true
+        }
+        
+        return false
+    }
 
     @ViewBuilder
-    private func messageBubble(_ msg: ChatMessage, showSeen: Bool) -> some View {
+    private func messageBubble(_ msg: ChatMessage, showSeen: Bool, showTimestamp: Bool) -> some View {
         VStack(
             alignment: msg.isMe ? .trailing : .leading,
             spacing: 2
         ) {
             
-            Text(msg.timestamp.chatTimestamp())
-                .font(.caption2)
-                .foregroundColor(.gray)
-                .padding(.horizontal, 4)
+            if showTimestamp {
+                HStack(spacing: 10) {
+                    if msg.isMe {
+                        Text(" \(msg.timestamp.chatTimestamp())")
+                            .font(.caption2)
+                            .foregroundColor(.gray)
+                        Text(vm.myUserId)
+                            .font(.title3)
+                            .bold()
+                    } else {
+                        Text(vm.otherUserId)
+                            .font(.title3)
+                            .bold()
+                        Text(" \(msg.timestamp.chatTimestamp())")
+                            .font(.caption2)
+                            .foregroundColor(.gray)
+                    }
+                }
+            }
             
             HStack {
                 if msg.isMe { Spacer() }
 
                 Text(msg.text)
-                    .padding(10)
                     .foregroundColor(.white)
-                    .background(msg.isMe ? Color(hex: 0x5DD100) : Color.gray)
-                    .cornerRadius(12)
 
                 if !msg.isMe { Spacer() }
             }
@@ -187,6 +222,13 @@ struct ChatView: View {
             .disabled(vm.messageInput.isEmpty)
         }
         .padding()
+        .overlay(
+            Rectangle()
+                .frame(height: 1)
+                .foregroundColor(AppConfig.globalBackgroundColorLight)
+                .frame(maxHeight: .infinity, alignment: .top),
+            alignment: .top
+        )
     }
 
     private var closeButton: some View {
@@ -205,7 +247,12 @@ struct ChatView: View {
         var body: some View {
             GeometryReader { geo in
                 ZStack(alignment: .topLeading) {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(AppConfig.globalBackgroundColorLight)
+                        .frame(height: height)
+
                     TextEditor(text: $text)
+                        .scrollContentBackground(.hidden)
                         .frame(height: height)
                         .padding(.horizontal, 4)
                         .background(Color.clear)
@@ -263,17 +310,6 @@ struct ChatView: View {
 
 }
 
-extension Color {
-    init(hex: UInt, alpha: Double = 1) {
-        self.init(
-            .sRGB,
-            red: Double((hex >> 16) & 0xff) / 255,
-            green: Double((hex >> 08) & 0xff) / 255,
-            blue: Double((hex >> 00) & 0xff) / 255,
-            opacity: alpha
-        )
-    }
-}
 
 extension Date {
     func chatTimestamp() -> String {
@@ -282,3 +318,4 @@ extension Date {
         return formatter.string(from: self)
     }
 }
+
