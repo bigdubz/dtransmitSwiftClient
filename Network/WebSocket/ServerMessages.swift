@@ -73,6 +73,7 @@ struct ChatMessagePayload: DecodablePayload {
     let messageId: String
     let createdAt: TimeInterval
     let isOnline: Bool
+    let replyingTo: String?
 }
 
 struct MessageDeliveredPayload: DecodablePayload {

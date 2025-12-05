@@ -8,7 +8,9 @@ final class ChatViewModel: ObservableObject {
     @Published var messageInput: String = ""
     @Published var isLoadingOlderMessages: Bool = false
     @Published var shouldAutoScrollToBottom: Bool = true
+    @Published var didInitialScrollToBottom: Bool = false
     @Published var otherUserIsTyping: Bool = false
+    @Published var isReplyingTo: ChatMessage? = nil
     
     private var typingDebounceTimer: Timer?
     private var didSendTypingTrue = false
@@ -38,11 +40,12 @@ final class ChatViewModel: ObservableObject {
             text: text,
             isMe: true,
             timestamp: Date(),
-            isSeen: false
+            isSeen: false,
+            replyingTo: self.isReplyingTo?.id
         )
         messages.append(newMsg)
         
-        wsClient.sendChat(to: otherUserId, text: text, clientId: tempId)
+        wsClient.sendChat(to: otherUserId, text: text, clientId: tempId, replyingTo: isReplyingTo?.id)
 
         messageInput = ""
     }
@@ -57,7 +60,8 @@ final class ChatViewModel: ObservableObject {
                         text: payload.text,
                         isMe: false,
                         timestamp: Date(timeIntervalSince1970: Double(payload.createdAt) / 1000),
-                        isSeen: false
+                        isSeen: false,
+                        replyingTo: payload.replyingTo
                     )
                     // Ensure main-thread publish even if invoked off-main
                     Task { @MainActor in
@@ -106,6 +110,7 @@ final class ChatViewModel: ObservableObject {
         let createdAt: Int
         let delivered: Int
         let seen: Int
+        let replyingTo: String?
     }
     
     func loadHistory(before: Date? = nil) async -> [ChatMessage] {
@@ -144,10 +149,10 @@ final class ChatViewModel: ObservableObject {
                     text: row.text,
                     isMe: (row.fromUserId == myUserId),
                     timestamp: Date(timeIntervalSince1970: TimeInterval(row.createdAt) / 1000),
-                    isSeen: row.seen != 0
+                    isSeen: row.seen != 0,
+                    replyingTo: row.replyingTo
                 )
             }
-        
             
             return mapped.reversed()
             
@@ -190,6 +195,15 @@ final class ChatViewModel: ObservableObject {
                 self.didSendTypingTrue = false
                 self.sendIsTyping(toUserId: self.otherUserId, isTyping: false)
             }
+        }
+    }
+    
+    func stopTyping() {
+        typingDebounceTimer?.invalidate()
+        
+        Task { @MainActor in
+            self.didSendTypingTrue = false
+            self.sendIsTyping(toUserId: self.otherUserId, isTyping: false)
         }
     }
 

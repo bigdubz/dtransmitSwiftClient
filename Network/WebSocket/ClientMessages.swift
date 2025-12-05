@@ -44,6 +44,7 @@ struct ChatPayload: EncodablePayload {
     let toUserId: String
     let text: String
     let clientId: String
+    let replyingTo: String?
 }
 
 struct MessageSeenPayload: EncodablePayload {
