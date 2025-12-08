@@ -7,6 +7,8 @@ enum ClientMessageType: String, Encodable {
     case chat = "CHAT_MESSAGE"
     case messageSeen = "MESSAGE_SEEN"
     case typing = "USER_TYPING"
+    case addReaction = "ADD_REACTION"
+    case removeReaction = "REMOVE_REACTION"
 }
 
 struct ClientMessage: Encodable {
@@ -54,4 +56,15 @@ struct MessageSeenPayload: EncodablePayload {
 struct TypingPayload: EncodablePayload {
     let toUserId: String
     let isTyping: Bool
+}
+
+struct AddReactionPayload: EncodablePayload {
+    let messageId: String
+    let reaction: String
+    let toUserId: String
+}
+
+struct RemoveReactionPayload: EncodablePayload {
+    let messageId: String
+    let toUserId: String
 }

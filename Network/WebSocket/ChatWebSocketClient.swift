@@ -97,6 +97,16 @@ final class ChatWebSocketClient: @unchecked Sendable {
         let msg = ClientMessage(type: .typing, payload: TypingPayload(toUserId: userId, isTyping: isTyping))
         send(msg)
     }
+    
+    func sendReaction(to userId: String, messageId: String, reaction: String) {
+        let msg = ClientMessage(type: .addReaction, payload: AddReactionPayload(messageId: messageId, reaction: reaction, toUserId: userId))
+        send(msg)
+    }
+    
+    func sendRemoveReaction(to userId: String, messageId: String) {
+        let msg = ClientMessage(type: .removeReaction, payload: RemoveReactionPayload(messageId: messageId, toUserId: userId))
+        send(msg)
+    }
 
     private func sendAuth() {
         let msg = ClientMessage(

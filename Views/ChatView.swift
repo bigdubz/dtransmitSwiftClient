@@ -212,8 +212,6 @@ struct ChatView: View {
                 
                 Button("Send") {
                     vm.sendMessage()
-                    vm.stopTyping()
-                    vm.isReplyingTo = nil
                     DispatchQueue.main.async {
                         inputFocused = true
                     }
@@ -237,6 +235,7 @@ struct ChatView: View {
             .frame(height: 15)
         }
     }
+
     
     struct GrowingTextEditor: View {
         @Binding var text: String
@@ -315,7 +314,7 @@ struct ChatView: View {
                         }
                     }
                 }
-                
+
                 if let reply = msg.replyingTo {
                     replyPreview(replyId: reply)
                         .padding(.top, showTimestamp ? 0 : 10)
@@ -325,11 +324,32 @@ struct ChatView: View {
                     if msg.isMe { Spacer() }
                     
                     Text(msg.text)
-                        .font(.callout)
+                        .font(isEmojiOnlyText(msg.text) ? Font.system(size: 50) : .callout)
                         .foregroundColor(.white)
                         .multilineTextAlignment(msg.isMe ? .trailing : .leading)
                     
                     if !msg.isMe { Spacer() }
+                }
+                
+                if let reaction = msg.reaction {
+                    HStack {
+                        if msg.isMe { Spacer() }
+                            
+                        Text(reaction)
+                            .font(.footnote)
+                            .padding(.top, 2)
+                            .padding(4)
+                            .background(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .fill(AppConfig.globalBackgroundColorLight)
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .stroke(AppConfig.globalBackgroundColorLighter, lineWidth: 1)
+                            )
+                        
+                        if !msg.isMe { Spacer() }
+                    }
                 }
                 
                 if showSeen && msg.isMe {
@@ -363,7 +383,37 @@ struct ChatView: View {
                 Button("Reply") {
                     vm.isReplyingTo = msg
                 }
+                // MARK: THIS IS DOGSHIT. REMOVE
+                Button("React with ❤️") {
+                    if msg.reaction != nil {
+                        vm.removeReaction(messageId: msg.id)
+                    } else {
+                        vm.sendReaction(messageId: msg.id, reaction: "❤️")
+                    }
+                }
             }
+            .onTapGesture(count: 2) {
+                if msg.reaction != nil {
+                    vm.removeReaction(messageId: msg.id)
+                } else {
+                    vm.sendReaction(messageId: msg.id, reaction: "❤️")
+                }
+            }
+        }
+        
+        
+        private func isEmojiOnlyText(_ text: String) -> Bool {
+            let limit = 5
+            guard !text.isEmpty, text.count <= limit else {
+                return false
+            }
+            
+            for char in text {
+                if !char.isEmoji {
+                    return false
+                }
+            }
+            return true
         }
         
         @ViewBuilder
@@ -433,5 +483,11 @@ extension Date {
         let formatter = DateFormatter()
         formatter.dateFormat = "h:mm a"
         return formatter.string(from: self)
+    }
+}
+
+extension Character {
+    var isEmoji: Bool {
+        unicodeScalars.contains { $0.properties.isEmoji }
     }
 }

@@ -8,6 +8,7 @@ enum AppConfig {
     static let wsBaseURL = "wss://\(base)"
     static let globalBackgroundColor = Color(hex: 0x17131B)
     static let globalBackgroundColorLight = Color(hex: 0x201B26)
+    static let globalBackgroundColorLighter = Color(hex: 0x2C2433)
 }
 
 extension Color {

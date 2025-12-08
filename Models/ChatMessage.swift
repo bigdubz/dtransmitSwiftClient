@@ -8,4 +8,5 @@ struct ChatMessage: Identifiable, Equatable {
     let timestamp: Date
     var isSeen: Bool
     let replyingTo: String?
+    var reaction: String?
 }

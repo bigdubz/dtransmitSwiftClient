@@ -30,10 +30,14 @@ final class ChatViewModel: ObservableObject {
         let text = messageInput.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
         
-        sendIsTyping(toUserId: myUserId, isTyping: false)
-        didSendTypingTrue = false
         typingDebounceTimer?.invalidate()
-
+        
+        Task { @MainActor in
+            self.didSendTypingTrue = false
+            self.sendIsTyping(toUserId: self.otherUserId, isTyping: false)
+            self.isReplyingTo = nil
+        }
+        
         let tempId = UUID().uuidString
         let newMsg = ChatMessage(
             id: tempId,
@@ -88,6 +92,24 @@ final class ChatViewModel: ObservableObject {
                 }
             }
             
+        case .addReaction:
+            if let payload = message.payload as? ServerAddReactionPayload {
+                Task { @MainActor in
+                    if let index = messages.firstIndex(where: { $0.id == payload.messageId }) {
+                        messages[index].reaction = payload.reaction
+                    }
+                }
+            }
+            
+        case .removeReaction:
+            if let payload = message.payload as? ServerRemoveReactionPayload {
+                Task { @MainActor in
+                    if let index = messages.firstIndex(where: { $0.id == payload.messageId }) {
+                        messages[index].reaction = nil
+                    }
+                }
+            }
+            
         case .userTyping:
             if let payload = message.payload as? ServerTypingPayload {
                 Task { @MainActor in
@@ -111,11 +133,11 @@ final class ChatViewModel: ObservableObject {
         let delivered: Int
         let seen: Int
         let replyingTo: String?
+        let reaction: String?
     }
     
     func loadHistory(before: Date? = nil) async -> [ChatMessage] {
         guard let token = UserSession.shared.token else { return [] }
-        
         
         var components = URLComponents(string: "\(AppConfig.apiBaseURL)/history")!
         components.queryItems = [
@@ -150,7 +172,8 @@ final class ChatViewModel: ObservableObject {
                     isMe: (row.fromUserId == myUserId),
                     timestamp: Date(timeIntervalSince1970: TimeInterval(row.createdAt) / 1000),
                     isSeen: row.seen != 0,
-                    replyingTo: row.replyingTo
+                    replyingTo: row.replyingTo,
+                    reaction: row.reaction
                 )
             }
             
@@ -197,15 +220,6 @@ final class ChatViewModel: ObservableObject {
             }
         }
     }
-    
-    func stopTyping() {
-        typingDebounceTimer?.invalidate()
-        
-        Task { @MainActor in
-            self.didSendTypingTrue = false
-            self.sendIsTyping(toUserId: self.otherUserId, isTyping: false)
-        }
-    }
 
     func markMessageAsSeen(messageId: String) {
         wsClient.sendSeen(messageId: messageId)
@@ -213,5 +227,13 @@ final class ChatViewModel: ObservableObject {
     
     func sendIsTyping(toUserId: String, isTyping: Bool) {
         wsClient.sendTyping(to: toUserId, isTyping: isTyping)
+    }
+    
+    func sendReaction(messageId: String, reaction: String) {
+        wsClient.sendReaction(to: otherUserId, messageId: messageId, reaction: reaction)
+    }
+    
+    func removeReaction(messageId: String) {
+        wsClient.sendRemoveReaction(to: otherUserId, messageId: messageId)
     }
 }
