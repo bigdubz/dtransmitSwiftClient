@@ -9,6 +9,8 @@ enum AppConfig {
     static let globalBackgroundColor = Color(hex: 0x17131B)
     static let globalBackgroundColorLight = Color(hex: 0x201B26)
     static let globalBackgroundColorLighter = Color(hex: 0x2C2433)
+    static let nodesGreen = Color(hex: 0x008E56)
+    static let nodesPurple = Color(hex: 0x38057D)
 }
 
 extension Color {

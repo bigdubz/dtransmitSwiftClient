@@ -22,6 +22,7 @@ struct ChatListView: View {
                 .padding()
             }
         }
+        .background(AppConfig.globalBackgroundColor)
         .navigationTitle("Chats")
         .task {
             await listVM.loadConversations()
@@ -50,7 +51,10 @@ struct ChatListView: View {
                     } label: {
                         ConversationRow(conversation: convo)
                     }
+                    .listRowBackground(AppConfig.globalBackgroundColorLighter)
                 }
+                .scrollContentBackground(.hidden)
+                .background(AppConfig.globalBackgroundColor)
             }
         }
     }
@@ -63,7 +67,7 @@ struct ChatListView: View {
                 .font(.system(size: 24))
                 .foregroundColor(.white)
                 .padding()
-                .background(Color.red)
+                .background(AppConfig.nodesPurple)
                 .clipShape(Circle())
                 .shadow(radius: 3)
         }
@@ -77,7 +81,7 @@ private struct ConversationRow: View {
     var body: some View {
         HStack(spacing: 12) {
             Circle()
-                .fill(conversation.isOnline ? Color.green : Color.gray)
+                .fill(conversation.isOnline ? AppConfig.nodesGreen : .gray)
                 .frame(width: 10, height: 10)
 
             VStack(alignment: .leading, spacing: 4) {
@@ -112,8 +116,14 @@ private struct ConversationRow: View {
 
     private func timeLabel(for date: Date) -> String {
         let formatter = DateFormatter()
-        formatter.dateStyle = .none
-        formatter.timeStyle = .short
+        let calendar = Calendar.current
+        
+        if !calendar.isDateInToday(date) {
+            formatter.dateFormat = "MMM d, yyyy 'at' HH:mm"
+        } else {
+            formatter.dateFormat = "HH:mm"
+        }
+
         return formatter.string(from: date)
     }
 }

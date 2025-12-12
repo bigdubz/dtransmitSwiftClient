@@ -203,13 +203,11 @@ final class ChatViewModel: ObservableObject {
     }
     
     func userStartedTyping() {
-        // Send `isTyping = true` once
         if !didSendTypingTrue {
             sendIsTyping(toUserId: otherUserId, isTyping: true)
             didSendTypingTrue = true
         }
         
-        // Reset debounce timer
         typingDebounceTimer?.invalidate()
         typingDebounceTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { [weak self] _ in
             guard let self else { return }

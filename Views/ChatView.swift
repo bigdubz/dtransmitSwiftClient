@@ -39,7 +39,6 @@ struct ChatView: View {
         // GLOBAL TAP TO DISMISS KEYBOARD
         .onTapGesture {
             inputFocused = false
-            scrollToBottomRequest = true
         }
         
         .navigationTitle("\(vm.otherUserId)")
@@ -106,10 +105,11 @@ struct ChatView: View {
             
             // Auto-scroll when "seen" changes
             .onChange(of: lastSeenMessageId) { _, newValue in
-                guard vm.didInitialScrollToBottom else { return }
+                guard vm.didInitialScrollToBottom,
+                      let id = newValue else { return }
                 withAnimation {
                     print("lastSeen")
-                    proxy.scrollTo(newValue, anchor: .bottom)
+                    proxy.scrollTo(id, anchor: .bottom)
                 }
             }
             
@@ -146,12 +146,14 @@ struct ChatView: View {
     @ViewBuilder
     private func messageRow(for msg: ChatMessage, previous: ChatMessage?) -> some View {
         let showTimestamp = shouldShowTimestamp(current: msg, previous: previous)
+        let showDate = shouldShowDate(current: msg, previous: previous)
         let showSeen = (msg.id == lastSeenMessageId)
         
         MessageBubbleRow(
             msg: msg,
             showSeen: showSeen,
-            showTimestamp: showTimestamp
+            showTimestamp: showTimestamp,
+            showDate: showDate
         )
         .environmentObject(vm)
     }
@@ -189,6 +191,12 @@ struct ChatView: View {
         }
         
         return false
+    }
+    
+    private func shouldShowDate(current: ChatMessage, previous: ChatMessage?) -> Bool {
+        guard let previous else { return true }
+        
+        return !Calendar.current.isDate(current.timestamp, inSameDayAs: previous.timestamp)
     }
     
     private var typingIndicatorSection: some View {
@@ -287,6 +295,7 @@ struct ChatView: View {
         let msg: ChatMessage
         let showSeen: Bool
         let showTimestamp: Bool
+        let showDate: Bool
         @State private var dragOffset: CGFloat = 0
         @EnvironmentObject var vm: ChatViewModel
 
@@ -295,6 +304,19 @@ struct ChatView: View {
                 alignment: msg.isMe ? .trailing : .leading,
                 spacing: 2
             ) {
+                
+                if showDate {
+                    Text(formattedDayString(for: msg.timestamp))
+                        .font(.footnote)
+                        .padding(.vertical, 4)
+                        .padding(.horizontal, 12)
+                        .background(AppConfig.globalBackgroundColorLighter)
+                        .foregroundColor(.gray)
+                        .clipShape(Capsule())
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.vertical, 6)
+                }
+                
                 if showTimestamp {
                     HStack(spacing: 10) {
                         if msg.isMe {
@@ -380,15 +402,28 @@ struct ChatView: View {
                     }
             )
             .contextMenu {
+                Button("Copy Text") {
+                    UIPasteboard.general.string = msg.text
+                }
+                
                 Button("Reply") {
                     vm.isReplyingTo = msg
                 }
-                // MARK: THIS IS DOGSHIT. REMOVE
-                Button("React with ❤️") {
+
+                Menu("React") {
+                    ForEach(["❤️", "😭", "💀", "😂", "👍", "👎"], id: \.self) { emoji in
+                        Button {
+                            vm.sendReaction(messageId: msg.id, reaction: emoji)
+                        } label: {
+                            Text(emoji)
+                                .font(.title)
+                        }
+                    }
+
                     if msg.reaction != nil {
-                        vm.removeReaction(messageId: msg.id)
-                    } else {
-                        vm.sendReaction(messageId: msg.id, reaction: "❤️")
+                        Button("Remove Reaction") {
+                            vm.removeReaction(messageId: msg.id)
+                        }
                     }
                 }
             }
@@ -416,6 +451,21 @@ struct ChatView: View {
             return true
         }
         
+        private func formattedDayString(for date: Date) -> String {
+            let calendar = Calendar.current
+            
+            if calendar.isDateInToday(date) {
+                return "Today"
+            }
+            if calendar.isDateInYesterday(date) {
+                return "Yesterday"
+            }
+            
+            let formatter = DateFormatter()
+            formatter.dateFormat = "MMM d, yyyy"
+            return formatter.string(from: date)
+        }
+
         @ViewBuilder
         private func replyPreview(replyId: String) -> some View {
             let replyToMsg = vm.messages.first(where: { $0.id == replyId })
