@@ -50,7 +50,8 @@ final class ChatListViewModel: ObservableObject {
         let vm = ChatViewModel(
             myUserId: myId,
             otherUserId: otherUserId,
-            wsClient: ws
+            wsClient: ws,
+            isOnline: conversations.first(where: { $0.id == otherUserId })?.isOnline ?? false
         )
         chatVMs[otherUserId] = vm
         sessionVM.activeChatVM = vm

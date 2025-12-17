@@ -11,6 +11,7 @@ final class ChatViewModel: ObservableObject {
     @Published var didInitialScrollToBottom: Bool = false
     @Published var otherUserIsTyping: Bool = false
     @Published var isReplyingTo: ChatMessage? = nil
+    @Published var otherUserOnline: Bool = false
     
     private var typingDebounceTimer: Timer?
     private var didSendTypingTrue = false
@@ -20,10 +21,11 @@ final class ChatViewModel: ObservableObject {
 
     private let wsClient: ChatWebSocketClient
 
-    init(myUserId: String, otherUserId: String, wsClient: ChatWebSocketClient) {
+    init(myUserId: String, otherUserId: String, wsClient: ChatWebSocketClient, isOnline: Bool) {
         self.myUserId = myUserId
         self.otherUserId = otherUserId
         self.wsClient = wsClient
+        self.otherUserOnline = isOnline
     }
 
     func sendMessage() {
@@ -96,7 +98,10 @@ final class ChatViewModel: ObservableObject {
             if let payload = message.payload as? ServerAddReactionPayload {
                 Task { @MainActor in
                     if let index = messages.firstIndex(where: { $0.id == payload.messageId }) {
-                        messages[index].reaction = payload.reaction
+                        if messages[index].reactions == nil {
+                            messages[index].reactions = [:]
+                        }
+                        messages[index].reactions?[payload.userId] = payload.reaction
                     }
                 }
             }
@@ -105,7 +110,7 @@ final class ChatViewModel: ObservableObject {
             if let payload = message.payload as? ServerRemoveReactionPayload {
                 Task { @MainActor in
                     if let index = messages.firstIndex(where: { $0.id == payload.messageId }) {
-                        messages[index].reaction = nil
+                        messages[index].reactions?[payload.userId] = nil
                     }
                 }
             }
@@ -116,6 +121,20 @@ final class ChatViewModel: ObservableObject {
                     if payload.fromUserId == otherUserId {
                         otherUserIsTyping = payload.isTyping
                     }
+                }
+            }
+        
+        case .userOnline:
+            if let payload = message.payload as? UserOnlinePayload, payload.userId == otherUserId {
+                Task { @MainActor in
+                    otherUserOnline = true
+                }
+            }
+            
+        case .userOffline:
+            if let payload = message.payload as? UserOfflinePayload, payload.userId == otherUserId {
+                Task { @MainActor in
+                    otherUserOnline = false
                 }
             }
             
@@ -133,7 +152,7 @@ final class ChatViewModel: ObservableObject {
         let delivered: Int
         let seen: Int
         let replyingTo: String?
-        let reaction: String?
+        let reactions: ChatReaction?
     }
     
     func loadHistory(before: Date? = nil) async -> [ChatMessage] {
@@ -173,7 +192,7 @@ final class ChatViewModel: ObservableObject {
                     timestamp: Date(timeIntervalSince1970: TimeInterval(row.createdAt) / 1000),
                     isSeen: row.seen != 0,
                     replyingTo: row.replyingTo,
-                    reaction: row.reaction
+                    reactions: row.reactions
                 )
             }
             

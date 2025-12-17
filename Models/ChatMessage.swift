@@ -1,6 +1,8 @@
 import Foundation
 
 
+typealias ChatReaction = [String: String]
+
 struct ChatMessage: Identifiable, Equatable {
     var id: String
     let text: String
@@ -8,5 +10,5 @@ struct ChatMessage: Identifiable, Equatable {
     let timestamp: Date
     var isSeen: Bool
     let replyingTo: String?
-    var reaction: String?
+    var reactions: ChatReaction?
 }

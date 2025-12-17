@@ -93,11 +93,13 @@ struct ServerMessageSeenPayload: DecodablePayload {
 
 struct ServerAddReactionPayload: DecodablePayload {
     let messageId: String
+    let userId: String
     let reaction: String
 }
 
 struct ServerRemoveReactionPayload: DecodablePayload {
     let messageId: String
+    let userId: String
 }
 
 struct ServerTypingPayload: DecodablePayload {

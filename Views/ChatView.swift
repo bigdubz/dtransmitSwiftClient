@@ -34,6 +34,11 @@ struct ChatView: View {
             
             inputBarSection
         }
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                ChatTopBar(name: vm.otherUserId, isOnline: vm.otherUserOnline)
+            }
+        }
         .background(AppConfig.globalBackgroundColor)
         
         // GLOBAL TAP TO DISMISS KEYBOARD
@@ -41,7 +46,7 @@ struct ChatView: View {
             inputFocused = false
         }
         
-        .navigationTitle("\(vm.otherUserId)")
+        //.navigationTitle("\(vm.otherUserId)")
         .navigationBarTitleDisplayMode(.inline)
         .task {
             await vm.loadInitialHistory()
@@ -298,7 +303,7 @@ struct ChatView: View {
         let showDate: Bool
         @State private var dragOffset: CGFloat = 0
         @EnvironmentObject var vm: ChatViewModel
-
+        
         var body: some View {
             VStack(
                 alignment: msg.isMe ? .trailing : .leading,
@@ -336,7 +341,7 @@ struct ChatView: View {
                         }
                     }
                 }
-
+                
                 if let reply = msg.replyingTo {
                     replyPreview(replyId: reply)
                         .padding(.top, showTimestamp ? 0 : 10)
@@ -353,23 +358,21 @@ struct ChatView: View {
                     if !msg.isMe { Spacer() }
                 }
                 
-                if let reaction = msg.reaction {
+                if let reaction = msg.reactions {
+                    let grouped = reaction.groupedReactions
                     HStack {
                         if msg.isMe { Spacer() }
-                            
-                        Text(reaction)
-                            .font(.footnote)
-                            .padding(.top, 2)
-                            .padding(4)
-                            .background(
-                                RoundedRectangle(cornerRadius: 6)
-                                    .fill(AppConfig.globalBackgroundColorLight)
-                            )
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 6)
-                                    .stroke(AppConfig.globalBackgroundColorLighter, lineWidth: 1)
-                            )
                         
+                        // dih
+
+                        ForEach(grouped, id: \.emoji) { reaction in
+                            ReactionPill(
+                                text: reaction.count > 1
+                                    ? "\(reaction.emoji) \(reaction.count)"
+                                    : reaction.emoji
+                            )
+                        }
+
                         if !msg.isMe { Spacer() }
                     }
                 }
@@ -381,7 +384,7 @@ struct ChatView: View {
                         .padding(.trailing, 4)
                 }
             }
-        
+            
             .frame(maxWidth: .infinity, alignment: msg.isMe ? .trailing : .leading)
             .offset(x: dragOffset)
             .contentShape(Rectangle())
@@ -405,7 +408,7 @@ struct ChatView: View {
                 Button("Copy Text") {
                     UIPasteboard.general.string = msg.text
                 }
-                
+
                 Button("Reply") {
                     vm.isReplyingTo = msg
                 }
@@ -413,14 +416,16 @@ struct ChatView: View {
                 Menu("React") {
                     ForEach(["❤️", "😭", "💀", "😂", "👍", "👎"], id: \.self) { emoji in
                         Button {
+                            if msg.reactions?[vm.myUserId] != nil {
+                                vm.removeReaction(messageId: msg.id)
+                            }
                             vm.sendReaction(messageId: msg.id, reaction: emoji)
                         } label: {
-                            Text(emoji)
-                                .font(.title)
+                            Text(emoji).font(.title)
                         }
                     }
 
-                    if msg.reaction != nil {
+                    if msg.reactions?[vm.myUserId] != nil {
                         Button("Remove Reaction") {
                             vm.removeReaction(messageId: msg.id)
                         }
@@ -428,14 +433,13 @@ struct ChatView: View {
                 }
             }
             .onTapGesture(count: 2) {
-                if msg.reaction != nil {
+                if msg.reactions?[vm.myUserId] != nil {
                     vm.removeReaction(messageId: msg.id)
                 } else {
                     vm.sendReaction(messageId: msg.id, reaction: "❤️")
                 }
             }
         }
-        
         
         private func isEmojiOnlyText(_ text: String) -> Bool {
             let limit = 5
@@ -511,6 +515,50 @@ struct ChatView: View {
             }
         }
     }
+    
+    struct ChatTopBar: View {
+        let name: String
+        let isOnline: Bool
+
+        var body: some View {
+            HStack(spacing: 10) {
+                Circle()
+                    .fill(isOnline ? AppConfig.nodesGreen : .gray)
+                    .frame(width: 10, height: 10)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(name)
+                        .font(.headline)
+
+                    Text(isOnline ? "Online" : "Offline")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+
+                Spacer()
+            }
+            .frame(maxWidth: .infinity)
+        }
+    }
+    
+    struct ReactionPill: View {
+        let text: String
+
+        var body: some View {
+            Text(text)
+                .font(.footnote)
+                .padding(.top, 2)
+                .padding(4)
+                .background(
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(AppConfig.globalBackgroundColorLight)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6)
+                        .stroke(AppConfig.globalBackgroundColorLighter, lineWidth: 1)
+                )
+        }
+    }
 
     struct TypingIndicator: View {
         @State private var scale: CGFloat = 1
@@ -539,5 +587,19 @@ extension Date {
 extension Character {
     var isEmoji: Bool {
         unicodeScalars.contains { $0.properties.isEmoji }
+    }
+}
+
+extension Dictionary where Key == String, Value == String {
+    var groupedReactions: [(emoji: String, count: Int)] {
+        var counts: [String: Int] = [:]
+
+        for emoji in self.values {
+            counts[emoji, default: 0] += 1
+        }
+
+        return counts
+            .map { (emoji: $0.key, count: $0.value) }
+            .sorted { $0.emoji < $1.emoji }
     }
 }
